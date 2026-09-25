@@ -79,6 +79,9 @@
 		<member name="library" type="VoxelInstanceLibrary" setter="set_library" getter="get_library">
 			Library from which instances to spawn will be taken from.
 		</member>
+		<member name="mesh_lod_distance" type="float" setter="set_mesh_lod_distance" getter="get_mesh_lod_distance" default="0.0">
+			When above 0, each item's mesh LOD ranges end at [code]mesh_lodN_distance_ratio * mesh_lod_distance[/code], independent of the terrain's LOD distances. When 0, the terrain's LOD distances are used. Distances are measured from the camera to the nearest point of each instancer block.
+		</member>
 		<member name="mesh_lod_update_budget_microseconds" type="int" setter="set_mesh_lod_update_budget_microseconds" getter="get_mesh_lod_update_budget_microseconds" default="500">
 			Hints the maximum time that should be spent updating mesh LODs (see "mesh LOD" properties on [VoxelInstanceLibraryMultiMeshItem]). This time can still be exceeded if an operation takes longer, but then no further processing will occur until next frame.
 		</member>
