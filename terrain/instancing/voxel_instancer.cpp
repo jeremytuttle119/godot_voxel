@@ -480,6 +480,13 @@ void VoxelInstancer::update_mesh_from_mesh_lod(
 }
 
 void VoxelInstancer::update_mesh_lod_distances_from_parent() {
+	// Voidwright change: when set, mesh LOD ranges use the instancer's own distance, not the terrain's
+	if (_mesh_lod_distance > 0.f) {
+		fill(_mesh_lod_distances, _mesh_lod_distance);
+		return;
+	}
+	fill(_mesh_lod_distances, 0.f);
+
 	ZN_ASSERT_RETURN(_parent != nullptr);
 
 	VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_parent);
@@ -567,9 +574,14 @@ void VoxelInstancer::process_mesh_lods() {
 			// const Lod &lod = _lods[lod_index];
 
 			const int lod_block_size = block_size << lod_index;
-			const int hs = lod_block_size >> 1;
-			const Vector3 block_center_local(block.grid_position * lod_block_size + Vector3i(hs, hs, hs));
-			const float distance_squared = cam_pos_local.distance_squared_to(block_center_local);
+			// Voidwright change: straight-line distance from the camera to the NEAREST point of the block (0 when the
+			// camera is inside it), the same measure the collision distance below uses, instead of the distance to
+			// the block's centre. The switch distances then form spheres centred on the player that move with him,
+			// like the terrain's octree LOD rings.
+			const Vector3i block_origin = block.grid_position * lod_block_size;
+			const float distance_squared = zylann::distance_squared(
+					AABB(Vector3(block_origin), zylann::godot::Vector3Utility::splat(lod_block_size)), cam_pos_local
+			);
 
 			// Compute current mesh LOD index (note, block.current_mesh_lod can totally be out of range due to eventual
 			// config changes, or even as a way to force an update. This will bring it back in range)
@@ -877,6 +889,18 @@ int VoxelInstancer::get_mesh_lod_update_budget_microseconds() const {
 
 void VoxelInstancer::set_mesh_lod_update_budget_microseconds(const int p_micros) {
 	_mesh_lod_update_budget_microseconds = math::max(p_micros, 0);
+}
+
+// Voidwright change
+void VoxelInstancer::set_mesh_lod_distance(const float distance) {
+	_mesh_lod_distance = math::max(distance, 0.f);
+	if (_parent != nullptr) {
+		update_mesh_lod_distances_from_parent();
+	}
+}
+
+float VoxelInstancer::get_mesh_lod_distance() const {
+	return _mesh_lod_distance;
 }
 
 int VoxelInstancer::get_collision_update_budget_microseconds() const {
@@ -3357,6 +3381,9 @@ void VoxelInstancer::_bind_methods() {
 			&VoxelInstancer::set_mesh_lod_update_budget_microseconds
 	);
 
+	ClassDB::bind_method(D_METHOD("set_mesh_lod_distance", "distance"), &VoxelInstancer::set_mesh_lod_distance);
+	ClassDB::bind_method(D_METHOD("get_mesh_lod_distance"), &VoxelInstancer::get_mesh_lod_distance);
+
 	ClassDB::bind_method(
 			D_METHOD("get_collision_update_budget_microseconds"),
 			&VoxelInstancer::get_collision_update_budget_microseconds
@@ -3381,6 +3408,12 @@ void VoxelInstancer::_bind_methods() {
 	);
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "up_mode", PROPERTY_HINT_ENUM, "PositiveY,Sphere"), "set_up_mode", "get_up_mode"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "mesh_lod_distance", PROPERTY_HINT_RANGE, "0,10000,0.1,or_greater"),
+			"set_mesh_lod_distance",
+			"get_mesh_lod_distance"
 	);
 
 	ADD_PROPERTY(

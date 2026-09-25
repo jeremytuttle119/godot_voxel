@@ -82,6 +82,10 @@ public:
 	int get_mesh_lod_update_budget_microseconds() const;
 	void set_mesh_lod_update_budget_microseconds(const int p_micros);
 
+	// Voidwright change: distance the items' mesh LOD ratios multiply. 0 = use the terrain's LOD distances.
+	void set_mesh_lod_distance(const float distance);
+	float get_mesh_lod_distance() const;
+
 	int get_collision_update_budget_microseconds() const;
 	void set_collision_update_budget_microseconds(const int p_micros);
 
@@ -469,6 +473,8 @@ private:
 	unsigned int _parent_data_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 	unsigned int _parent_mesh_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 	FixedArray<float, MAX_LOD> _mesh_lod_distances;
+	// Voidwright change: own mesh LOD distance, 0 = follow the terrain
+	float _mesh_lod_distance = 0.f;
 	// Vector3 _mesh_lod_last_update_camera_position;
 	// float _mesh_lod_update_camera_threshold_distance = 8.f;
 	unsigned int _mesh_lod_time_sliced_block_index = 0;

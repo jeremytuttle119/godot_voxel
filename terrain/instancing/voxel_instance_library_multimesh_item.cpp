@@ -123,13 +123,17 @@ int VoxelInstanceLibraryMultiMeshItem::get_mesh_lod_count() const {
 void VoxelInstanceLibraryMultiMeshItem::set_mesh_lod_distance_ratio(int mesh_lod_index, float ratio) {
 	ERR_FAIL_INDEX(mesh_lod_index, static_cast<int>(_mesh_lod_max_distance_ratios.size()));
 	ratio = math::clamp(ratio, MIN_DISTANCE_RATIO, MAX_DISTANCE_RATIO);
-	if (mesh_lod_index > 0) {
-		ratio = math::max(ratio, _mesh_lod_max_distance_ratios[mesh_lod_index - 1]);
-	}
-	if (mesh_lod_index + 1 < static_cast<int>(_mesh_lod_max_distance_ratios.size())) {
-		ratio = math::min(ratio, _mesh_lod_max_distance_ratios[mesh_lod_index + 1]);
-	}
+	// Voidwright change: keep the value given and move the neighbours to stay ascending, so ratios can be set in any
+	// order (it used to clamp the new value between its neighbours instead)
 	_mesh_lod_max_distance_ratios[mesh_lod_index] = ratio;
+	for (int i = mesh_lod_index - 1; i >= 0; --i) {
+		_mesh_lod_max_distance_ratios[i] =
+				math::min(_mesh_lod_max_distance_ratios[i], _mesh_lod_max_distance_ratios[i + 1]);
+	}
+	for (int i = mesh_lod_index + 1; i < static_cast<int>(_mesh_lod_max_distance_ratios.size()); ++i) {
+		_mesh_lod_max_distance_ratios[i] =
+				math::max(_mesh_lod_max_distance_ratios[i], _mesh_lod_max_distance_ratios[i - 1]);
+	}
 }
 
 float VoxelInstanceLibraryMultiMeshItem::get_mesh_lod_distance_ratio(int mesh_lod_index) const {
